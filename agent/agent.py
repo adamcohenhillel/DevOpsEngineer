@@ -102,6 +102,9 @@ The agent possesses deep knowledge of cloud architectures, security best practic
 Do not ask the user for input unless it is extremely necessary. You, as highly skilled DevOps, should make decisions by yourself and only ask the user for input when it is absolutely required.
 
 You can use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to authenticate to AWS.
+
+RULES:
+1. You must use Terraform for managing resoucres. Only use AWS CLI to list and check resources.
 """
 
     tools = [
@@ -266,7 +269,8 @@ You can use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to
                         {"role": "user", "content": "You did not provide any tools to execute, if you don't use any tools, the program will exit."})
 
                     print(
-                        "\033[1;33;40mYou did not provide any tools to execute, if you don't use any tools, the program will exit.\033[0;37;40m")
+                        f"\33[33m\nResult:\nYou did not provide any tools to execute, if you don't use any tools, the program will exit.\33[0m")
+
                     continue
 
             respone_without_tools = 0
@@ -278,57 +282,53 @@ You can use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to
 
                 if tool.function.name == "list_files":
                     result = list_files(args['folder'])
-                    print(f'\33[33mResult: {result}\33[0m')
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": str(result)})
+
                 elif tool.function.name == "read_file":
                     result = read_file(args['file_path'])
-                    print(f'\33[33mResult: {result}\33[0m')
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": result})
+
                 elif tool.function.name == "rewrite_file":
                     rewrite_file(args['file_path'], args['content'])
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": "File rewritten!"})
+
                 elif tool.function.name == "write_main_tf":
                     edit_main_tf(args['code'])
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": "Code written to main.tf!"})
+
                 elif tool.function.name == "ask_input_from_user":
                     result = ask_input_from_user(args['prompt'])
-                    print(f'\33[33mResult: {result}\33[0m')
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": result})
+
                 elif tool.function.name == "terraform_init":
                     result = terraform_init()
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": result})
+
                 elif tool.function.name == "terraform_plan":
                     result = terraform_plan()
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": result})
 
                 elif tool.function.name == "terraform_apply":
                     terraform_apply()
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": result})
+
                 elif tool.function.name == "run_awscli_command":
                     result = run_awscli_command(args['command'])
-                    print(f'\33[33mResult: {result}\33[0m')
-
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": result})
+
                 else:
                     print("FUCCCCK")
 
+                print(f'\33[33m\nResult:\n{messages[-1]["content"]}\33[0m')
                 print("----")
 
         except Exception as e:
