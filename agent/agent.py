@@ -8,7 +8,7 @@ import openai
 client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
-def list_files(folder: str) -> list:
+def list_files(folder: str = ".") -> list:
     cmd = ["ls", folder]
     result = subprocess.check_output(cmd).decode()
     return result.split('\n')
@@ -53,7 +53,7 @@ Respond using JSON. Key names should have no backslashes, values should use plai
                             "description": "The folder to list files from",
                         },
                     },
-                    "required": ["list_files"],
+                    "required": ["folder"],
                 },
             },
         },
@@ -127,7 +127,8 @@ Respond using JSON. Key names should have no backslashes, values should use plai
                 print(f'\33[36mAgent is executing tool: {
                       tool.function.name}\33[0m')
                 print(f'\33[36margs: {tool.function.arguments}\33[0m')
-                args = folder = json.loads(tool.function.arguments)
+                args = json.loads(tool.function.arguments)
+
                 if tool.function.name == "list_files":
                     result = list_files(args['folder'])
                     print(f'\33[33mResult: {result}\33[0m')
