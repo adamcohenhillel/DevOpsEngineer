@@ -233,6 +233,9 @@ Do not ask the user for input unless it is extremely necessary. You, as highly s
                 else:
                     messages.append(
                         {"role": "user", "content": "You did not provide any tools to execute, if you don't use any tools, the program will exit."})
+
+                    print(
+                        "\033[1;33;40mYou did not provide any tools to execute, if you don't use any tools, the program will exit.\033[0;37;40m")
                     continue
 
             respone_without_tools = 0
