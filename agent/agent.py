@@ -20,11 +20,21 @@ def read_file(file_path: str) -> str:
 
 
 def rewrite_file(file_path: str, content: str) -> None:
-    user_int = input(f'About to write to {file_path}:\n {content} \nPress enter to continue or "No" to skip...')
+    user_int = input(f'About to write to {file_path}:\n {
+                     content} \nPress enter to continue or "No" to skip...')
     if user_int == "No":
         return None
     with open(file_path, 'w') as f:
         f.write(content)
+
+
+def run_awscli_command(command: str) -> str:
+    try:
+        cmd = command.split(" ")
+        output = subprocess.check_output(cmd).decode()
+        return output
+    except Exception as e:
+        return str(e)
 
 
 def edit_main_tf(code: str) -> None:
@@ -41,6 +51,9 @@ def terraform_init(folder: str = "./terraform") -> None:
         os.chdir("..")
         return "Terraform initialized!"
     except Exception as e:
+        print("************"*10)
+        print(e)
+        print("************"*10)
         return str(e)
 
 
@@ -201,6 +214,23 @@ You can use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to
                 },
                 "required": ["prompt"],
             },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "run_awscli_command",
+                "description": "Run an AWS CLI command",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "command": {
+                            "type": "string",
+                            "description": "The AWS CLI command to run",
+                        },
+                    },
+                },
+                "required": ["command"],
+            },
         }
     ]
 
@@ -241,7 +271,8 @@ You can use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to
 
             respone_without_tools = 0
             for tool in new_message.tool_calls:
-                print(f'\33[36mAgent is executing tool: {tool.function.name}\33[0m')
+                print(f'\33[36mAgent is executing tool: {
+                      tool.function.name}\33[0m')
                 print(f'\33[36margs: {tool.function.arguments}\33[0m')
                 args = json.loads(tool.function.arguments)
 
@@ -286,6 +317,12 @@ You can use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to
 
                 elif tool.function.name == "terraform_apply":
                     terraform_apply()
+
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": result})
+                elif tool.function.name == "run_awscli_command":
+                    result = run_awscli_command(args['command'])
+                    print(f'\33[33mResult: {result}\33[0m')
 
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": result})
