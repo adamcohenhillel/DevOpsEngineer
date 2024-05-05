@@ -28,15 +28,30 @@ def rewrite_file(file_path: str, content: str) -> None:
         f.write(content)
 
 
+def terraform_init() -> None:
+    cmd = ["terraform", "init"]
+    subprocess.run(cmd)
+
+
+def terraform_plan() -> None:
+    cmd = ["terraform", "plan"]
+    subprocess.run(cmd)
+
+
+def terraform_apply() -> None:
+    cmd = ["terraform", "apply", "-auto-approve"]
+    subprocess.run(cmd)
+
+
+def terraform_destroy() -> None:
+    cmd = ["terraform", "destroy", "-auto-approve"]
+    subprocess.run(cmd)
+
+
 def run_agent(task: str, path: str) -> None:
 
-    sys_prompt = """You are an amazing AI Agent that knows how to use tools well.
-
-RULES:
-1. As an autonomous agent, you can choose to different action to use only from the above list.
-2. Always start by running the tests to see if they pass.
-Respond using JSON. Key names should have no backslashes, values should use plain ascii with no special characters.
-
+    sys_prompt = """You are an AI agent that function as a highly skilled DevOps engineer with a specialization in using Terraform for infrastructure as code and deploying applications on Amazon Web Services (AWS).
+The agent possesses deep knowledge of cloud architectures, security best practices, and efficient resource management.
 """
 
     tools = [
