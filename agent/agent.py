@@ -20,13 +20,19 @@ def read_file(file_path: str) -> str:
 
 
 def rewrite_file(file_path: str, content: str) -> None:
-    user_int = input(f'About to write to {file_path}:\n {
-                     content} \nPress enter to continue or "No" to skip...')
+    user_int = input(f'About to write to {file_path}:\n {content} \nPress enter to continue or "No" to skip...')
     if user_int == "No":
         return None
     with open(file_path, 'w') as f:
         f.write(content)
 
+def mkdir_terraform():
+    cmd = ["mkdir", "terraform"]
+    subprocess.run(cmd)
+
+def create_main_tf():
+    with open("terraform/main.tf", "w") as f:
+        pass
 
 def terraform_init() -> None:
     cmd = ["terraform", "init"]
@@ -110,6 +116,30 @@ The agent possesses deep knowledge of cloud architectures, security best practic
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "mkdir_terraform",
+                "description": "make a terraform directory",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                    },
+                },
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "create_main_tf",
+                "description": "make main.tf file in terraform directory",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                    },
+                },
+            },
+        },
     ]
 
     messages = [
@@ -139,8 +169,7 @@ The agent possesses deep knowledge of cloud architectures, security best practic
 
             # Execute tools:
             for tool in new_message.tool_calls:
-                print(f'\33[36mAgent is executing tool: {
-                      tool.function.name}\33[0m')
+                print(f'\33[36mAgent is executing tool: {tool.function.name}\33[0m')
                 print(f'\33[36margs: {tool.function.arguments}\33[0m')
                 args = json.loads(tool.function.arguments)
 
@@ -150,7 +179,15 @@ The agent possesses deep knowledge of cloud architectures, security best practic
 
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": str(result)})
+                elif tool.function.name == "mkdir_terraform":
+                    result = mkdir_terraform()
+                    print(f'\33[33mResult: {result}\33[0m')
 
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": str(result)})
+                elif tool.function.name == "create_main_tf":
+                    result = create_main_tf()
+                    print(f'\33[33mResult: {result}\33[0m')
                 else:
                     print("FUCCCCK")
 
@@ -163,5 +200,5 @@ The agent possesses deep knowledge of cloud architectures, security best practic
 
 
 if __name__ == '__main__':
-    user_input = input("What you want to do?")
+    user_input = input("\033[1;32;40mDevOpAI % \033[0;37;40m")
     run_agent(task=user_input, path='.')
