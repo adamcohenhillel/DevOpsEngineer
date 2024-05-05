@@ -20,44 +20,74 @@ def read_file(file_path: str) -> str:
 
 
 def rewrite_file(file_path: str, content: str) -> None:
-    user_int = input(f'About to write to {file_path}:\n {content} \nPress enter to continue or "No" to skip...')
+    user_int = input(f'About to write to {file_path}:\n {
+                     content} \nPress enter to continue or "No" to skip...')
     if user_int == "No":
         return None
     with open(file_path, 'w') as f:
         f.write(content)
 
-def mkdir_terraform():
-    cmd = ["mkdir", "terraform"]
-    subprocess.run(cmd)
 
-def create_main_tf():
+def edit_main_tf(code: str) -> None:
+    os.makedirs("terraform", exist_ok=True)
     with open("terraform/main.tf", "w") as f:
-        pass
-
-def terraform_init() -> None:
-    cmd = ["terraform", "init"]
-    subprocess.run(cmd)
+        f.write(code)
 
 
-def terraform_plan() -> None:
-    cmd = ["terraform", "plan"]
-    subprocess.run(cmd)
+def terraform_init(folder: str = "./terraform") -> None:
+    try:
+        os.chdir(folder)
+        cmd = ["terraform", "init"]
+        subprocess.run(cmd)
+        os.chdir("..")
+        return "Terraform initialized!"
+    except Exception as e:
+        return str(e)
 
 
-def terraform_apply() -> None:
-    cmd = ["terraform", "apply", "-auto-approve"]
-    subprocess.run(cmd)
+def terraform_plan(folder: str = "./terraform") -> str:
+    try:
+        os.chdir(folder)
+        cmd = ["terraform", "plan"]
+        output = subprocess.check_output(cmd).decode()
+        os.chdir("..")
+        return output
+    except Exception as e:
+        return str(e)
 
 
-def terraform_destroy() -> None:
-    cmd = ["terraform", "destroy", "-auto-approve"]
-    subprocess.run(cmd)
+def terraform_apply(folder: str = "./terraform") -> None:
+    try:
+        os.chdir(folder)
+        cmd = ["terraform", "apply", "-auto-approve"]
+        subprocess.run(cmd)
+        os.chdir("..")
+        return "Terraform applied!"
+    except Exception as e:
+        return str(e)
+
+
+def terraform_destroy(folder: str = "./terraform") -> None:
+    try:
+        os.chdir(folder)
+        cmd = ["terraform", "destroy", "-auto-approve"]
+        subprocess.run(cmd)
+        os.chdir("..")
+        return "Terraform destroyed!"
+    except Exception as e:
+        return str(e)
+
+
+def ask_input_from_user(prompt: str) -> str:
+    return input(prompt)
 
 
 def run_agent(task: str, path: str) -> None:
 
     sys_prompt = """You are an AI agent that function as a highly skilled DevOps engineer with a specialization in using Terraform for infrastructure as code and deploying applications on Amazon Web Services (AWS).
 The agent possesses deep knowledge of cloud architectures, security best practices, and efficient resource management.
+
+Do not ask the user for input unless it is extremely necessary. You, as highly skilled DevOps, should make decisions by yourself and only ask the user for input when it is absolutely required.
 """
 
     tools = [
@@ -119,27 +149,58 @@ The agent possesses deep knowledge of cloud architectures, security best practic
         {
             "type": "function",
             "function": {
-                "name": "mkdir_terraform",
-                "description": "make a terraform directory",
+                "name": "write_main_tf",
+                "description": "Write code into main.tf file in terraform directory",
                 "parameters": {
                     "type": "object",
                     "properties": {
+                        "code": {
+                            "type": "string",
+                            "description": "The code to write to main.tf",
+                        },
                     },
                 },
+                "required": ["code"],
             },
         },
         {
             "type": "function",
             "function": {
-                "name": "create_main_tf",
-                "description": "make main.tf file in terraform directory",
+                "name": "terraform_init",
+                "description": "Initialize terraform in the terraform directory",
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "terraform_plan",
+                "description": "Run terraform plan",
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "terraform_apply",
+                "description": "Run terraform apply",
+            },
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "ask_input_from_user",
+                "description": "Ask for input from the user",
                 "parameters": {
                     "type": "object",
                     "properties": {
+                        "prompt": {
+                            "type": "string",
+                            "description": "What to ask the user for",
+                        },
                     },
                 },
+                "required": ["prompt"],
             },
-        },
+        }
     ]
 
     messages = [
@@ -148,8 +209,9 @@ The agent possesses deep knowledge of cloud architectures, security best practic
     ]
 
     running = True
+    respone_without_tools = 0
     while running:
-        print('\33[32m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Agent Loop ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\33[0m')
+        print('\33[32m\n\n\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[ Agent Loop ]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n\n\33[0m')
         try:
             completion = client.chat.completions.create(
                 model="gpt-4-0125-preview",
@@ -163,13 +225,20 @@ The agent possesses deep knowledge of cloud architectures, security best practic
             print("Agent: ", new_message.content)
 
             if new_message.tool_calls is None:
-                running = False
-                print("No tool calls - FINISH!")
-                return ""
+                respone_without_tools += 1
+                if respone_without_tools == 2:
+                    running = False
+                    print("No tool calls - FINISH!")
+                    return ""
+                else:
+                    messages.append(
+                        {"role": "user", "content": "You did not provide any tools to execute, if you don't use any tools, the program will exit."})
+                    continue
 
-            # Execute tools:
+            respone_without_tools = 0
             for tool in new_message.tool_calls:
-                print(f'\33[36mAgent is executing tool: {tool.function.name}\33[0m')
+                print(f'\33[36mAgent is executing tool: {
+                      tool.function.name}\33[0m')
                 print(f'\33[36margs: {tool.function.arguments}\33[0m')
                 args = json.loads(tool.function.arguments)
 
@@ -179,15 +248,44 @@ The agent possesses deep knowledge of cloud architectures, security best practic
 
                     messages.append(
                         {"role": "tool", "tool_call_id": tool.id, "content": str(result)})
-                elif tool.function.name == "mkdir_terraform":
-                    result = mkdir_terraform()
+                elif tool.function.name == "read_file":
+                    result = read_file(args['file_path'])
                     print(f'\33[33mResult: {result}\33[0m')
 
                     messages.append(
-                        {"role": "tool", "tool_call_id": tool.id, "content": str(result)})
-                elif tool.function.name == "create_main_tf":
-                    result = create_main_tf()
+                        {"role": "tool", "tool_call_id": tool.id, "content": result})
+                elif tool.function.name == "rewrite_file":
+                    rewrite_file(args['file_path'], args['content'])
+
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": "File rewritten!"})
+                elif tool.function.name == "write_main_tf":
+                    edit_main_tf(args['code'])
+
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": "Code written to main.tf!"})
+                elif tool.function.name == "ask_input_from_user":
+                    result = ask_input_from_user(args['prompt'])
                     print(f'\33[33mResult: {result}\33[0m')
+
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": result})
+                elif tool.function.name == "terraform_init":
+                    result = terraform_init()
+
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": result})
+                elif tool.function.name == "terraform_plan":
+                    result = terraform_plan()
+
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": result})
+
+                elif tool.function.name == "terraform_apply":
+                    terraform_apply()
+
+                    messages.append(
+                        {"role": "tool", "tool_call_id": tool.id, "content": result})
                 else:
                     print("FUCCCCK")
 
@@ -200,5 +298,7 @@ The agent possesses deep knowledge of cloud architectures, security best practic
 
 
 if __name__ == '__main__':
-    user_input = input("\033[1;32;40mDevOpAI % \033[0;37;40m")
+    # user_input = input("\033[1;31;40mDevOpAI % \033[0;37;40m")
+    # make user_input a orange color background:
+    user_input = input("\033[1;31;43mDevOpAI % \033[0;37;40m")
     run_agent(task=user_input, path='.')
