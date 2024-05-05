@@ -20,8 +20,7 @@ def read_file(file_path: str) -> str:
 
 
 def rewrite_file(file_path: str, content: str) -> None:
-    user_int = input(f'About to write to {file_path}:\n {
-                     content} \nPress enter to continue or "No" to skip...')
+    user_int = input(f'About to write to {file_path}:\n {content} \nPress enter to continue or "No" to skip...')
     if user_int == "No":
         return None
     with open(file_path, 'w') as f:
@@ -88,6 +87,8 @@ def run_agent(task: str, path: str) -> None:
 The agent possesses deep knowledge of cloud architectures, security best practices, and efficient resource management.
 
 Do not ask the user for input unless it is extremely necessary. You, as highly skilled DevOps, should make decisions by yourself and only ask the user for input when it is absolutely required.
+
+You can use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables to authenticate to AWS.
 """
 
     tools = [
@@ -240,8 +241,7 @@ Do not ask the user for input unless it is extremely necessary. You, as highly s
 
             respone_without_tools = 0
             for tool in new_message.tool_calls:
-                print(f'\33[36mAgent is executing tool: {
-                      tool.function.name}\33[0m')
+                print(f'\33[36mAgent is executing tool: {tool.function.name}\33[0m')
                 print(f'\33[36margs: {tool.function.arguments}\33[0m')
                 args = json.loads(tool.function.arguments)
 
