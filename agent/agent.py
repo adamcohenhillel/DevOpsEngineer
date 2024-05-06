@@ -136,12 +136,13 @@ The agent possesses deep knowledge of cloud architectures, security best practic
 
 Do not ask the user for input unless it is extremely necessary. You, as highly skilled DevOps, should make decisions by yourself and only ask the user for input when it is absolutely required.
 
+AWS_ACCESS_KEY_ID={os.getenv('AWS_ACCESS_KEY_ID')}
+AWS_SECRET_ACCESS_KEY={os.getenv('AWS_SECRET_ACCESS_KEY')}
 Current PWD: {os.getcwd()}
 
 RULES:
-1. You must use Terraform for managing resoucres. Only use AWS CLI to list and check resources.
-2. Always use region us-east-1
-3. Make sure you understand the code you need to work with before executing the given task.
+1. Always use region us-east-1
+2. Make sure you understand the code you need to work with before executing the given task.
 """
     name_to_function = {
         "list_files": list_files,
@@ -250,23 +251,23 @@ RULES:
                 "required": ["prompt"],
             },
         },
-        {
-            "type": "function",
-            "function": {
-                "name": "run_awscli_command",
-                "description": "Run an AWS CLI command",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "command": {
-                            "type": "string",
-                            "description": "The AWS CLI command to run",
-                        },
-                    },
-                },
-                "required": ["command"],
-            },
-        },
+        # {
+        #     "type": "function",
+        #     "function": {
+        #         "name": "run_awscli_command",
+        #         "description": "Run an AWS CLI command",
+        #         "parameters": {
+        #             "type": "object",
+        #             "properties": {
+        #                 "command": {
+        #                     "type": "string",
+        #                     "description": "The AWS CLI command to run",
+        #                 },
+        #             },
+        #         },
+        #         "required": ["command"],
+        #     },
+        # },
         {
             "type": "function",
             "function": {
@@ -356,12 +357,8 @@ RULES:
                         {"role": "tool", "tool_call_id": tool.id, "content": "Tool not found!"})
 
                 print("***"*10)
-                print(f'\33[33m\nResult:\n{messages[-1]}\33[0m')
-                print("----")
-                print("----")
                 print(f'\33[33m\nResult:\n{messages[-1]["content"]}\33[0m')
                 print("***"*10)
-                print("----")
 
         except Exception as e:
             running = False
@@ -370,7 +367,5 @@ RULES:
 
 
 if __name__ == '__main__':
-    # user_input = input("\033[1;31;40mDevOpAI % \033[0;37;40m")
-    # make user_input a orange color background:
     user_input = input("\033[1;31;43mDevOpAI % \033[0;37;40m")
     run_agent(task=user_input, path='.')
